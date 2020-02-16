@@ -28,9 +28,26 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 
 	@Override
 	public String getBusLine(String termoBusca) {
-		this.authenticate();
-		return restTemplate.getForObject(URI_SPTRANS + "Linha/Buscar?termosBusca=8000", String.class);
+		if (restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
+				.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
+			if (this.authenticate()) {
+				return restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
+						.getBody();
+			}
+		}
+		return null;
 
+	}
+
+	@Override
+	public String getBusPosition(String line) {
+		if (restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getStatusCode()
+				.equals(HttpStatus.BAD_REQUEST)) {
+			if (this.authenticate()) {
+				return restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getBody();
+			}
+		}
+		return null;
 	}
 
 	private Boolean authenticate() {

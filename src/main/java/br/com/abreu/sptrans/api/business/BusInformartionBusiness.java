@@ -4,4 +4,6 @@ public interface BusInformartionBusiness {
 
 	public String getBusLine(String termoBusca);
 
+	public String getBusPosition(String line);
+
 }

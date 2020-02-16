@@ -21,4 +21,9 @@ public class BusInformationController {
 		return ResponseEntity.ok(busInformartionBusiness.getBusLine(termoBusca));
 	}
 
+	@GetMapping(path = "/position")
+	public ResponseEntity<?> getBusPosition(@RequestParam(required = true, name = "line") String line) {
+		return ResponseEntity.ok(busInformartionBusiness.getBusPosition(line));
+	}
+
 }
