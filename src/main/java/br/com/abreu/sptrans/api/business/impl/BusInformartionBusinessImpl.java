@@ -47,7 +47,7 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 				return restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getBody();
 			}
 		}
-		return null;
+		return "Ainda não está autenticado";
 	}
 
 	private Boolean authenticate() {
