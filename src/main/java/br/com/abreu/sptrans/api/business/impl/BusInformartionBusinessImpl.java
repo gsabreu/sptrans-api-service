@@ -39,11 +39,10 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 		} catch (HttpClientErrorException e) {
 			ResponseEntity<?> authResponse = this.authenticate();
 			if (authResponse.getStatusCode().is2xxSuccessful()) {
-				String authCookie = authResponse.getHeaders().getFirst("Set-Cookie");
-				HttpHeaders headers = new HttpHeaders();
-				headers.add("Cookie", authCookie);
-				return restTemplate.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
-						new HttpEntity<String>(headers), String.class).getBody();
+				return restTemplate
+						.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
+								this.createAuthHeader(authResponse.getHeaders().getFirst("Set-Cookie")), String.class)
+						.getBody();
 
 			}
 		}
@@ -67,6 +66,12 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 		return restTemplate.postForEntity(
 				URI_SPTRANS + "Login/Autenticar?token=9dd7814d1c159b7df312a3a9022c0700903fdaeae3ca6a2350998cb93e25962f",
 				null, String.class);
+	}
+
+	private HttpEntity<String> createAuthHeader(String cookie) {
+		HttpHeaders header = new HttpHeaders();
+		header.add("Cookie", cookie);
+		return new HttpEntity<String>(header);
 	}
 
 }
