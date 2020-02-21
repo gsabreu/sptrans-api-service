@@ -2,9 +2,12 @@ package br.com.abreu.sptrans.api.business.impl;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import br.com.abreu.sptrans.api.business.BusInformartionBusiness;
@@ -28,38 +31,42 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 
 	@Override
 	public String getBusLine(String termoBusca) {
-		if (restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
-				.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
-			if (this.authenticate()) {
-				return restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
-						.getBody();
+		String response = "";
+		try {
+			response = restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
+					.getBody();
+
+		} catch (HttpClientErrorException e) {
+			ResponseEntity<?> authResponse = this.authenticate();
+			if (authResponse.getStatusCode().is2xxSuccessful()) {
+				String authCookie = authResponse.getHeaders().getFirst("Set-Cookie");
+				HttpHeaders headers = new HttpHeaders();
+				headers.add("Cookie", authCookie);
+				return restTemplate.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
+						new HttpEntity<String>(headers), String.class).getBody();
+
 			}
 		}
-		return null;
+		return response;
 
 	}
 
 	@Override
 	public String getBusPosition(String line) {
-		if (restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getStatusCode()
-				.equals(HttpStatus.BAD_REQUEST)) {
-			if (this.authenticate()) {
-				return restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getBody();
-			}
-		}
+//		if (restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getStatusCode()
+//				.equals(HttpStatus.BAD_REQUEST)) {
+//			if (this.authenticate()) {
+//				return restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getBody();
+//			}
+//		}
 		return "Ainda não está autenticado";
 	}
 
-	private Boolean authenticate() {
+	private ResponseEntity<?> authenticate() {
 		log.info("Autenticando");
-		ResponseEntity<String> response = restTemplate.postForEntity(
+		return restTemplate.postForEntity(
 				URI_SPTRANS + "Login/Autenticar?token=9dd7814d1c159b7df312a3a9022c0700903fdaeae3ca6a2350998cb93e25962f",
 				null, String.class);
-
-		if (response.getStatusCode().equals(HttpStatus.OK)) {
-			return Boolean.valueOf(response.getBody());
-		}
-		return false;
 	}
 
 }
