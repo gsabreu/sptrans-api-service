@@ -1,5 +1,6 @@
 package br.com.abreu.sptrans.api.business.impl;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -23,6 +24,8 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 	@Value("${sptrans-token}")
 	private String TOKEN;
 
+	private String cookie = "";
+
 	private final RestTemplate restTemplate;
 
 	public BusInformartionBusinessImpl(RestTemplateBuilder restTemplateBuilder) {
@@ -31,20 +34,17 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 
 	@Override
 	public String getBusLine(String termoBusca) {
+		this.validateCookie();
 		String response = "";
 		try {
-			response = restTemplate.getForEntity(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, String.class)
-					.getBody();
+			response = restTemplate.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
+					this.createAuthHeader(this.cookie), String.class).getBody();
 
 		} catch (HttpClientErrorException e) {
-			ResponseEntity<?> authResponse = this.authenticate();
-			if (authResponse.getStatusCode().is2xxSuccessful()) {
-				return restTemplate
-						.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
-								this.createAuthHeader(authResponse.getHeaders().getFirst("Set-Cookie")), String.class)
-						.getBody();
+			this.createCookie();
+			return restTemplate.exchange(URI_SPTRANS + "Linha/Buscar?termosBusca=" + termoBusca, HttpMethod.GET,
+					this.createAuthHeader(this.cookie), String.class).getBody();
 
-			}
 		}
 		return response;
 
@@ -64,7 +64,7 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 	private ResponseEntity<?> authenticate() {
 		log.info("Autenticando");
 		return restTemplate.postForEntity(
-				URI_SPTRANS + "Login/Autenticar?token=9dd7814d1c159b7df312a3a9022c0700903fdaeae3ca6a2350998cb93e25962f",
+				URI_SPTRANS + "Login/Autenticar?token="+ TOKEN,
 				null, String.class);
 	}
 
@@ -72,6 +72,19 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 		HttpHeaders header = new HttpHeaders();
 		header.add("Cookie", cookie);
 		return new HttpEntity<String>(header);
+	}
+
+	private void validateCookie() {
+		if (StringUtils.isBlank(this.cookie)) {
+			this.createCookie();
+		}
+	}
+
+	private void createCookie() {
+		ResponseEntity<?> authResponse = this.authenticate();
+		if (authResponse.getStatusCode().is2xxSuccessful()) {
+			this.cookie = authResponse.getHeaders().getFirst("Set-Cookie");
+		}
 	}
 
 }
