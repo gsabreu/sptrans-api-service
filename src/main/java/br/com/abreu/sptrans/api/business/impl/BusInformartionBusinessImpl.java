@@ -55,13 +55,18 @@ public class BusInformartionBusinessImpl implements BusInformartionBusiness {
 	@Override
 	public String getBusPosition(String line) {
 		log.info("Buscando informações da posição do onibus");
-//		if (restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getStatusCode()
-//				.equals(HttpStatus.BAD_REQUEST)) {
-//			if (this.authenticate()) {
-//				return restTemplate.getForEntity(URI_SPTRANS + "Posicao", String.class).getBody();
-//			}
-//		}
-		return "Ainda não está autenticado";
+		this.cookie = authentictionBusiness.validateCookie(this.cookie);
+		String response = "";
+		try {
+			response = restTemplate.exchange(URI_SPTRANS + "Posicao", HttpMethod.GET,
+					authentictionBusiness.createAuthHeader(this.cookie), String.class).getBody();
+
+		} catch (HttpClientErrorException e) {
+			this.cookie = authentictionBusiness.createCookie();
+			return restTemplate.exchange(URI_SPTRANS + "Posicao", HttpMethod.GET,
+					authentictionBusiness.createAuthHeader(this.cookie), String.class).getBody();
+		}
+		return response;
 	}
 
 }
